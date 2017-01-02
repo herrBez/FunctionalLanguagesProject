@@ -155,9 +155,9 @@ var_help :: Parser String
 var_help = do x <- letter
               xs <- many alphanum
               let l = (x:xs)
-              if(elem l reservedKeywords)
+              if(elem l reservedKeywords) --Checking if the var is a keyword
 				then 
-					return []
+					empty
 				else
 					return (x:xs)
 
@@ -165,20 +165,20 @@ var :: Parser String
 var = token var_help
 
 
+
 factor :: Parser LKC
-factor  = do n <- integer
-             return (NUM n)
-          <|>
-          do symbol "null"
-             return (NULL)
-          <|>
-          do s <- var
-             symbol "("--add arguments
-             n <- factor
+factor  = do s <- var
+             symbol "("
+             n <- expr
              l <- many (do symbol ","
-                           factor)
+                           expr)
              symbol ")"
              return (CALL (VAR s) (n:l))
+          <|>
+          do s <- var
+             symbol "("
+             symbol ")"
+             return (CALL (VAR s) [])
           <|>
           do s <- var
              return (VAR s)
@@ -187,6 +187,13 @@ factor  = do n <- integer
              e <- expa
              symbol ")"
              return e
+          <|>
+          do n <- integer
+             return (NUM n)
+          <|>
+          do symbol "null"
+             return (NULL)
+          
 
 term :: Parser LKC
 term = do f <- factor
@@ -233,6 +240,7 @@ opp_binary c token = do
                        e1 <- expr
                        symbol ","
                        e2 <- expr
+                       symbol ")"
                        return (c e1 e2)
 
 p_cons = opp_binary (CONS) "cons"
@@ -242,8 +250,8 @@ p_leq = opp_binary (LEQ) "leq"
 opp = p_head <|> p_tail <|> p_cons <|> p_eq <|> p_leq
 
 
-varCons = do l <- var
-             return (VAR l)
+varCons = do v <- var
+             return (VAR v)
 
 
 lambda = do symbol "lambda"
@@ -290,5 +298,5 @@ p_let_and_letrec c token =  do symbol token
 
 
 p_let = p_let_and_letrec LET "let"
-p_letrec = p_let_and_letrec LETREC "let"
+p_letrec = p_let_and_letrec LETREC "letrec"
 prog = p_let <|> p_letrec
