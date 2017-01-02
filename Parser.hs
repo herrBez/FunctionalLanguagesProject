@@ -3,6 +3,11 @@
 import Control.Applicative
 import Data.Char
 
+-----------------------------------------------------------------
+--
+-----------------------------------------------------------------
+
+
 -- Words that cannot be used as variables/function name
 reservedKeywords = ["if", "then", "else", "lambda", "and", "let", "letrec", "in", "end",
                     "null", "cons", "tail", "eq", "leq"] 
@@ -13,7 +18,12 @@ data LKC = VAR String | NUM Int | NULL | ADD LKC LKC |
 			IF LKC LKC LKC | LAMBDA [LKC] LKC | CALL LKC [LKC] |
 			LET LKC [(LKC,LKC)] | LETREC LKC [(LKC, LKC)]
 			deriving(Show, Eq)
-			
+
+
+---------------------------------------------------
+-- Library of parser of the class
+---------------------------------------------------
+		
 newtype Parser a = P (String -> [(a, String)])
 
 parse :: Parser a -> String -> [(a, String)]
@@ -148,8 +158,9 @@ integers :: Parser[Int]
 integers = list integer
 
 
-
---- BEGIN ---
+------------------------------------
+--- BEGIN OF THE LISP KIT PARSER ---
+------------------------------------
 
 var_help :: Parser String
 var_help = do x <- letter
@@ -300,3 +311,14 @@ p_let_and_letrec c token =  do symbol token
 p_let = p_let_and_letrec LET "let"
 p_letrec = p_let_and_letrec LETREC "letrec"
 prog = p_let <|> p_letrec
+
+---------------------
+-- Test Cases
+---------------------
+
+test1 :: String
+test1 = "let x = 2 and y = 4 in x+y*2 end"
+
+test2 :: String
+test2 = "letrec fact = lambda(n) if eq(n,1) then 1 else n * fact(n-1) and x=cons(1, cons(2, null)) and f = lambda (l g) if eq(l,null) then null else cons (g (head(l)), f(g, tail(l))) in f(x, fact) end" 
+
